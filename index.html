@@ -21,7 +21,7 @@
     <div class="dashboard">
         <header class="header">
             <div class="header-left">
-                <h1>⚡ Power Plant Monitoring</h1>
+                <h1>Power Plant Monitoring</h1>
                 <p id="dateRange">Loading data...</p>
             </div>
             <div class="header-right">
@@ -53,9 +53,13 @@
                     <div class="unit">t/h</div>
                 </div>
                 <div class="kpi-card">
-                    <h3>Max Clean Temp</h3>
-                    <div class="value" id="kpiTemp">-</div>
-                    <div class="unit">°C</div>
+                    <select id="kpiSelector3" class="kpi-select">
+                        <option value="temp">Max Combustion Temp</option>
+                        <option value="idf">Avg IDF Load</option>
+                        <option value="rgf">Avg RGF Load</option>
+                    </select>
+                    <div class="value" id="kpiValue3">-</div>
+                    <div class="unit" id="kpiUnit3">°C</div>
                 </div>
             </div>
 

@@ -105,13 +105,26 @@ body {
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-.kpi-card h3 {
+.kpi-card h3,
+.kpi-card select {
     font-size: 0.75rem;
     color: var(--text-secondary);
     margin-bottom: 4px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 600;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    text-align: center;
+    cursor: pointer;
+    width: 100%;
+}
+
+.kpi-card select {
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 2px;
 }
 
 .kpi-card .value {

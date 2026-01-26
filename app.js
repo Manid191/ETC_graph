@@ -23,7 +23,13 @@ document.addEventListener('DOMContentLoaded', init);
 async function init() {
     uploadInput.addEventListener('change', handleFileUpload);
     dateFilter.addEventListener('change', handleDateFilter);
-    await loadData();
+    if (document.getElementById('kpiSelector3')) {
+        document.getElementById('kpiSelector3').addEventListener('change', () => {
+            if (charts.main) updateVisibleRange(charts.main);
+        });
+    }
+    // await loadData(); // Disabled to prevent remembering/auto-loading old data
+    document.getElementById('dateRange').textContent = 'Please open a CSV file';
 }
 
 function handleDateFilter(evt) {
@@ -54,6 +60,7 @@ function handleFileUpload(evt) {
         complete: function (results) {
             processData(results.data, results.meta.fields);
             document.getElementById('dateRange').textContent = `Loaded: ${file.name}`;
+            evt.target.value = ''; // Reset input so same file can be uploaded again if needed
         },
         error: function (err) {
             console.error(err);
@@ -127,6 +134,11 @@ function processData(data, fields) {
     updateKPIs();
     renderMainChart();
     updateHeader();
+
+    // 4. Auto-zoom to All View on first load
+    setTimeout(() => {
+        window.zoomTime('all');
+    }, 100);
 }
 
 function parseThaiDate(str) {
@@ -165,17 +177,37 @@ function updateKPIs(startTime = null, endTime = null) {
     if (dataToCalc.length === 0) {
         document.getElementById('kpiPower').textContent = '-';
         document.getElementById('kpiSteam').textContent = '-';
-        document.getElementById('kpiTemp').textContent = '-';
+        const val3 = document.getElementById('kpiValue3');
+        if (val3) val3.textContent = '-';
         return;
     }
 
     const avgPower = (dataToCalc.reduce((acc, r) => acc + r.power, 0) / dataToCalc.length).toFixed(2);
     const avgSteam = (dataToCalc.reduce((acc, r) => acc + r.steam, 0) / dataToCalc.length).toFixed(2);
-    const maxTemp = Math.max(...dataToCalc.map(r => r.tempComb)).toFixed(1);
 
     document.getElementById('kpiPower').textContent = avgPower;
     document.getElementById('kpiSteam').textContent = avgSteam;
-    document.getElementById('kpiTemp').textContent = maxTemp;
+
+    // Dynamic KPI 3
+    const selector = document.getElementById('kpiSelector3');
+    const unitEl = document.getElementById('kpiUnit3');
+    const valEl = document.getElementById('kpiValue3');
+
+    if (selector && unitEl && valEl) {
+        const type = selector.value;
+        let val = 0;
+        if (type === 'temp') {
+            val = Math.max(...dataToCalc.map(r => r.tempComb)).toFixed(1);
+            unitEl.textContent = '°C';
+        } else if (type === 'idf') {
+            val = (dataToCalc.reduce((acc, r) => acc + r.idf, 0) / dataToCalc.length).toFixed(1);
+            unitEl.textContent = '%';
+        } else if (type === 'rgf') {
+            val = (dataToCalc.reduce((acc, r) => acc + r.rgf, 0) / dataToCalc.length).toFixed(1);
+            unitEl.textContent = '%';
+        }
+        valEl.textContent = val;
+    }
 }
 
 function renderMainChart() {
@@ -216,7 +248,7 @@ function renderMainChart() {
             yAxisID: 'y_temp',
             borderWidth: 1.5,
             pointRadius: 0,
-            hidden: true
+            hidden: true // Hidden by default
         },
         {
             label: 'IDF Running (%)',
@@ -248,8 +280,8 @@ function renderMainChart() {
             type: 'scatter',
             pointStyle: 'crossRot',
             pointRadius: 6,
-            borderWidth: 2
-            // Visible by default
+            borderWidth: 2,
+            hidden: true // Hidden by default
         }
     ];
 
@@ -536,7 +568,7 @@ function renderMainChart() {
     generateCustomLegend(charts.main);
 
     document.getElementById('resetZoomBtn').addEventListener('click', () => {
-        charts.main.resetZoom();
+        window.zoomTime('all');
     });
 }
 
@@ -545,8 +577,8 @@ window.zoomTime = function (hours) {
     const chart = charts.main;
     if (!chart || rawData.length === 0) return;
 
-    // NOTE: 'resetZoom' can conflict with manual scale overrides. 
-    // We do NOT call it here. We override specific min/max below.
+    // Reset zoom plugin's internal state to allow manual scale overrides
+    chart.resetZoom('none');
 
     const firstDataTime = rawData[0].date.getTime();
     const lastDataDate = rawData[rawData.length - 1].date;
@@ -661,11 +693,9 @@ function updateVisibleRange(chart) {
     const d1 = new Date(min);
     const d2 = new Date(max);
 
-    // Format nicely
-    const dateStr = d1.toLocaleDateString() + ' - ' + d2.toLocaleDateString();
-
-    // Check if we show hours or days
-    // const diffHours = (max - min) / (1000 * 60 * 60);
+    // Format DD/MM/YYYY
+    const fmt = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    const dateStr = fmt(d1) + ' - ' + fmt(d2);
 
     document.getElementById('dateRange').textContent = `Range: ${dateStr}`;
 
